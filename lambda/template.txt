@@ -1,0 +1,8 @@
+{obj.name} has made an enquiry on {obj.app_title}
+
+Name: {obj.name}
+Email: {obj.email}
+Phone: {obj.phone}
+Message: {obj.message}
+
+Amazon SES Test (Python) This email was sent with Amazon SES using the AWS SDK for Python (Boto).

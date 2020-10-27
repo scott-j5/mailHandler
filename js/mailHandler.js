@@ -10,7 +10,7 @@ const lambdaConfig = {
     }
 }
 
-function sendMail(form){
+function sendMail(form, token = null){
     return new Promise((resolve, reject) => {
         var AWS = require('aws-sdk');
 
@@ -31,7 +31,7 @@ function sendMail(form){
             InvocationType: 'RequestResponse',
             LogType: 'None',
             ClientContext: AWS.util.base64.encode(JSON.stringify(lambdaConfig.clientContext)),
-            Payload: JSON.stringify(parseForm(form)),
+            Payload: JSON.stringify(parseForm(form, token)),
         }
 
         lambda.invoke(lambdaParams, function(error, data){
@@ -41,18 +41,49 @@ function sendMail(form){
                 console.log(errorObj);
                 reject(errorObj);
             }else{
-                resolve(JSON.parse(data.Payload));
+                resolve(processResponse(JSON.parse(data.Payload)));
             }
         })
     });
 }
 
-function parseForm(form){
+function parseForm(form, token = null){
     var formData = {};
     form.forEach(object => {
         formData[object.name] = object.value;
     });
+    formData["recaptchaToken"] = token;
     return formData
+}
+
+function processResponse(response){
+    var output = {"fields": [], "formMessage": "", "response": response}
+
+    if (response.statusCode != 200){
+        if ("fields" in response){
+            response["fields"].forEach(field => {
+                let newField = {"name": field.name, "value": field.value}
+                if ("errors" in field){
+                    newField["errors"] = [];
+                    field["errors"].forEach(error => {
+                        newField["errors"].push(error);
+                    });
+                }
+                output["fields"].push(newField);
+            })
+        }
+        if ("error" in response){
+        output["formMessage"] = {"error": response.error};
+        }
+        if ("message" in response && response.statusCode != 1001){
+        output["formMessage"] = {"info": response.message};
+        }
+    }else{
+        output["fieldErrors"] = {};
+        output["formMessage"] = {"success": response.body};
+    }
+    console.log(output);
+    return output;
 }
 
 module.exports.sendMail = sendMail;

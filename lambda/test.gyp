@@ -1,12 +1,15 @@
+import mailHandler
+
 event = {
     "name": "Scott James",
     "email": "scotty.james95@me.com",
     "message": "This is a test message",
-    "phone": "0488442"
+    "phone": "0488442",
+    "recaptcha_token":"sdfidsn"
 }
 context = {
     "client": {
         "app_title": "kirkron"
     }
 }
-lambda_handler(event, context)
+print(mailHandler.lambda_handler(event, context))

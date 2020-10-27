@@ -10,6 +10,7 @@ const lambdaConfig = {
     }
 }
 
+
 function sendMail(form, token = null){
     return new Promise((resolve, reject) => {
         var AWS = require('aws-sdk');
@@ -41,7 +42,7 @@ function sendMail(form, token = null){
                 console.log(errorObj);
                 reject(errorObj);
             }else{
-                resolve(processResponse(JSON.parse(data.Payload)));
+                resolve(JSON.parse(data.Payload));
             }
         })
     });
@@ -52,38 +53,37 @@ function parseForm(form, token = null){
     form.forEach(object => {
         formData[object.name] = object.value;
     });
-    formData["recaptchaToken"] = token;
+    formData["recaptcha_token"] = token;
     return formData
 }
 
-function processResponse(response){
-    var output = {"fields": [], "formMessage": "", "response": response}
+function formatResponse(response){
+    var output = {"fields": [], "formMessages": [], "response": response}
 
     if (response.statusCode != 200){
         if ("fields" in response){
-            response["fields"].forEach(field => {
-                let newField = {"name": field.name, "value": field.value}
-                if ("errors" in field){
-                    newField["errors"] = [];
-                    field["errors"].forEach(error => {
-                        newField["errors"].push(error);
-                    });
-                }
-                output["fields"].push(newField);
-            })
+            output["fields"] = response["fields"];
+            if (output['fields']['recaptcha_token']['errors'].length > 0){
+                output['fields']['recaptcha_token']['errors'].forEach(error => {
+                    output["formMessages"].push({"code": "", "type": "error", "message": error.message});
+                });
+            }
         }
         if ("error" in response){
-        output["formMessage"] = {"error": response.error};
+            output["formMessages"].push({"code": "", "type": "error", "message": response.error});
+        }
+        if ("errorMessage" in response){
+            output["formMessages"].push({"code": "", "type": "error", "message": response.errorMessage});
         }
         if ("message" in response && response.statusCode != 1001){
-        output["formMessage"] = {"info": response.message};
+            output["formMessages"].push({"code": "", "type": "info", "message": response.message});
         }
     }else{
         output["fieldErrors"] = {};
-        output["formMessage"] = {"success": response.body};
+        output["formMessages"] = {"code": "", "type": "success", "message": response.body};
     }
-    console.log(output);
     return output;
 }
 
 module.exports.sendMail = sendMail;
+module.exports.formatResponse = formatResponse;

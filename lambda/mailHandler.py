@@ -173,18 +173,21 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 500,
                 'body': json.dumps(f'Error! {e.response["Error"]["Message"]}'),
+                'message': json.dumps(f'Error! {e.response["Error"]["Message"]}'),
                 'fields': email.cleaned_fields
             }
         # Display a success message if email was sent sucessfully
         else:
             return {
                 'statusCode': 200,
-                'body': json.dumps(f'Success! Enquiry sent. (ID: {response["MessageId"]})')
+                'body': json.dumps(f'Success! Enquiry sent. (ID: {response["MessageId"]})'),
+                'message': json.dumps(f'Success! Enquiry sent. (ID: {response["MessageId"]})')
             }
     # Return cleaned email data (including erorrs) if any validation errors are raised
     else:
         return{
             'statusCode': 422,
+            'body': 'UNPROCESSABLE ENTITY (Validation error)',
             'message': 'UNPROCESSABLE ENTITY (Validation error)',
             'fields': email.cleaned_fields
         }
